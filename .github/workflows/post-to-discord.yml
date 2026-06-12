@@ -20,7 +20,7 @@ jobs:
           DATE=$(jq -r '.date' output.json)
           SUMMARY=$(jq -r '.summary' output.json)
           HEADLINES=$(jq -r '.headlines | map("• " + .) | join("\n")' output.json)
-          MESSAGE="**Soccer Daily Digest — ${DATE}**\n\n${SUMMARY}\n\n${HEADLINES}"
+          MESSAGE=$(printf "**Soccer Daily Digest — %s**\n\n%s\n\n%s" "$DATE" "$SUMMARY" "$HEADLINES")
 
           curl -s -X POST \
             -H "Authorization: Bot ${{ secrets.DISCORD_BOT_TOKEN }}" \
