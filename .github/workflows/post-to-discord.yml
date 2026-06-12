@@ -1,0 +1,33 @@
+name: Post Soccer Summary to Discord
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - output.json
+
+jobs:
+  post-to-discord:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Read summary from output.json
+        id: read
+        run: |
+          DATE=$(jq -r '.date' output.json)
+          SUMMARY=$(jq -r '.summary' output.json)
+          HEADLINES=$(jq -r '.headlines[]' output.json | sed 's/^/• /')
+          MESSAGE="**Soccer Daily Digest — $DATE**\n\n$SUMMARY\n\n$HEADLINES"
+          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+
+      - name: Post to Discord
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bot ${{ secrets.DISCORD_BOT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": $(jq -n --arg msg "${{ steps.read.outputs.message }}" '$msg')}" \
+            "https://discord.com/api/v10/channels/${{ secrets.DISCORD_CHANNEL_ID }}/messages"
