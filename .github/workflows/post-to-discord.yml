@@ -15,19 +15,15 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Read summary from output.json
-        id: read
+      - name: Post to Discord
         run: |
           DATE=$(jq -r '.date' output.json)
           SUMMARY=$(jq -r '.summary' output.json)
-          HEADLINES=$(jq -r '.headlines[]' output.json | sed 's/^/• /')
-          MESSAGE="**Soccer Daily Digest — $DATE**\n\n$SUMMARY\n\n$HEADLINES"
-          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+          HEADLINES=$(jq -r '.headlines | map("• " + .) | join("\n")' output.json)
+          MESSAGE="**Soccer Daily Digest — ${DATE}**\n\n${SUMMARY}\n\n${HEADLINES}"
 
-      - name: Post to Discord
-        run: |
           curl -s -X POST \
             -H "Authorization: Bot ${{ secrets.DISCORD_BOT_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"content\": $(jq -n --arg msg "${{ steps.read.outputs.message }}" '$msg')}" \
+            -d "$(jq -n --arg content "$MESSAGE" '{"content": $content}')" \
             "https://discord.com/api/v10/channels/${{ secrets.DISCORD_CHANNEL_ID }}/messages"
